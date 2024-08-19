@@ -54,4 +54,25 @@ public class AuthController : ControllerBase
         await _userManager.ConfirmEmailAsync(appUser, token);
         return Ok();
     }
+
+    [HttpPost("forgot-password")]
+    public async Task<IActionResult> ForgotPassword(string email)
+    {
+        AppUser? appUser = await _userManager.FindByEmailAsync(email);
+        if (appUser == null) return NotFound();
+        string token = await _userManager.GeneratePasswordResetTokenAsync(appUser);
+        return Ok(token);
+    }
+
+    [HttpPut]
+    public async Task<IActionResult> ResetPassword(string token, string email, string password, string confirmPassword)
+    {
+        AppUser? appUser = await _userManager.FindByEmailAsync(email);
+        if (appUser == null) return NotFound();
+        if (password != confirmPassword) return BadRequest("Passwords do not match");
+        var result = await _userManager.ResetPasswordAsync(appUser, token, password);
+        if (!result.Succeeded) return BadRequest(result.Errors);
+        await _userManager.UpdateSecurityStampAsync(appUser);
+        return NoContent();
+    }
 }
